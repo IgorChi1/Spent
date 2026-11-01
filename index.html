@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E7E7E5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Расходы">
+<title>Расходы</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preload" href="fonts/InterTight-900.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  /* Расходы - приложение Na.u.chi. Всё хранится только в этом телефоне (localStorage), в сеть ничего не уходит.
+     Шрифты и цвета - фирменные (brand/fonts/approved/README.md, brand/final/README.md). */
+  @font-face { font-family: "Inter Tight"; src: url(fonts/InterTight-900.woff2) format("woff2"); font-weight: 900; font-display: swap; }
+  @font-face { font-family: "Manrope"; src: url(fonts/Manrope.woff2) format("woff2"); font-weight: 200 700; font-display: swap; }
+  @font-face { font-family: "Unbounded"; src: url(fonts/Unbounded-700.woff2) format("woff2"); font-weight: 700; font-display: swap; }
+
+  :root { --bg: #E7E7E5; --ink: #111111; --neon: #DCFE00; --gray: #9C9C98; --card: #FFFFFF; --soft: #F3F3F0;
+          --line: #ECECE8; --on-neon: #111111; color-scheme: light; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #141414; --ink: #F2F2F0; --gray: #8E8E8A; --card: #1E1E1E; --soft: #262626; --line: #2C2C2B; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { background: var(--bg); color: var(--ink); }
+  body { min-height: 100vh; font: 400 16px/1.4 "Manrope", -apple-system, "Segoe UI", Roboto, sans-serif;
+         padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 28px); }
+  .wrap { max-width: 480px; margin: 0 auto; }
+  .num { font-family: "Inter Tight", -apple-system, sans-serif; font-weight: 900; font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
+  .el { font-family: "Unbounded", -apple-system, sans-serif; font-weight: 700; }
+
+  header { display: flex; align-items: center; justify-content: space-between; height: 40px; }
+  .logo { height: 22px; width: auto; color: var(--ink); display: block; }
+  .month { display: flex; align-items: center; gap: 4px; }
+  .month button { width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--card); color: var(--ink);
+                  font: 700 18px/1 "Manrope", sans-serif; }
+  .month button:disabled { opacity: .3; }
+  .month span { font-size: 11px; min-width: 112px; text-align: center; text-transform: uppercase; letter-spacing: .02em; }
+
+  .title { margin: 22px 2px 16px; }
+  .title small { display: block; font: 200 15px/1.2 "Manrope", sans-serif; color: var(--gray); text-transform: uppercase; letter-spacing: .08em; }
+  .title h1 { font: 900 44px/1 "Inter Tight", -apple-system, sans-serif; letter-spacing: -.03em; margin-top: 4px; }
+
+  .card { background: var(--card); border-radius: 26px; padding: 22px 20px; margin-bottom: 12px; }
+  .lbl { font-size: 10px; color: var(--gray); text-transform: uppercase; letter-spacing: .04em; }
+  .total .head { display: flex; justify-content: space-between; align-items: baseline; }
+  .total .big { font-size: 46px; line-height: 1; margin-top: 10px; }
+  .total .big mark { background: var(--neon); color: var(--on-neon); padding: 2px 8px 0; border-radius: 10px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  .bars { margin-top: 18px; display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--soft); gap: 2px; }
+  .bars i { display: block; height: 100%; }
+  .legend { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 13px; }
+  .legend div { display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; }
+  .legend b { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .legend em { font-style: normal; margin-left: auto; font: 900 14px "Inter Tight", sans-serif; }
+
+  .amount { display: flex; align-items: center; gap: 10px; border: 2px solid var(--line); border-radius: 18px; padding: 4px 16px; background: var(--soft); }
+  .amount:focus-within { border-color: var(--ink); }
+  .amount.bad { border-color: #FF4D4D; }
+  .amount input { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; color: var(--ink); padding: 8px 0;
+                  font: 900 30px "Inter Tight", -apple-system, sans-serif; letter-spacing: -.02em; }
+  .amount input::placeholder { color: var(--gray); opacity: .6; }
+  .amount .rub { font: 900 30px "Inter Tight", sans-serif; color: var(--gray); }
+  .hint { min-height: 18px; font-size: 12px; color: #FF4D4D; margin: 6px 4px 0; }
+  .cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 6px; }
+  .cats button { border: 0; background: var(--soft); border-radius: 16px; padding: 10px 2px 8px; color: var(--ink);
+                 font: 600 11.5px/1.15 "Manrope", sans-serif; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .cats button span { font-size: 24px; line-height: 1; }
+  .cats button.on { background: var(--neon); color: var(--on-neon); }
+  .note-in { width: 100%; margin-top: 10px; border: 2px solid var(--line); border-radius: 16px; padding: 12px 14px; background: var(--soft);
+             font: 400 16px "Manrope", sans-serif; color: var(--ink); outline: none; }
+  .note-in:focus { border-color: var(--ink); }
+  .go { width: 100%; margin-top: 12px; border: 0; border-radius: 18px; background: var(--neon); color: var(--on-neon); padding: 17px;
+        font-size: 14px; text-transform: uppercase; letter-spacing: .02em; }
+  .go:disabled { background: var(--soft); color: var(--gray); }
+  .where { text-align: center; font-size: 12px; color: var(--gray); margin-top: 8px; min-height: 16px; }
+
+  .list .lbl { margin: 0 2px 6px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; }
+  .row .e { width: 42px; height: 42px; border-radius: 13px; background: var(--soft); display: flex; align-items: center; justify-content: center; font-size: 22px; flex: none; }
+  .row .t { flex: 1; min-width: 0; } .row .t b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .t i { font-style: normal; font-size: 12px; color: var(--gray); }
+  .row .s { font-size: 18px; white-space: nowrap; }
+  .row .x { border: 0; background: none; color: var(--gray); font-size: 16px; width: 34px; height: 34px; border-radius: 50%; flex: none; }
+  .empty { color: var(--gray); text-align: center; padding: 16px 0 6px; font-size: 14px; }
+  .csv { width: 100%; border: 2px solid var(--ink); background: transparent; color: var(--ink); border-radius: 18px; padding: 14px;
+         font-size: 12px; text-transform: uppercase; letter-spacing: .02em; }
+  .foot { text-align: center; font-size: 12px; color: var(--gray); margin-top: 14px; line-height: 1.5; }
+  .toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 24px); transform: translate(-50%, 140px); background: var(--ink); color: var(--bg);
+           padding: 12px 18px; border-radius: 14px; font-weight: 600; transition: transform .25s; z-index: 9; white-space: nowrap; }
+  .toast.show { transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg class="logo" role="img" aria-label="Научи" viewBox="140 500 1009.75 245"><g fill="none" stroke-width="29" stroke-linecap="butt"><path d="M357.48,571.70 A100.7,100.7 0 1 0 185.08,673.30 L172,725 L229.41,706.71 A100.7,100.7 0 0 0 357.48,653.70 L325.78,653.70 A72.9,72.9 0 0 1 233.54,678.22 L209.5,684.5 L212.18,662.42 A72.9,72.9 0 1 1 325.78,571.70 Z" fill="currentColor" stroke="none"/><rect x="330.75" y="587.70" width="50" height="50" fill="#DCFE00"/><path d="M450.25,686 V626 A44.5,44.5 0 0 1 539.25,626 V686" stroke="currentColor"/><ellipse cx="628.25" cy="628" rx="49.0" ry="46.5" stroke="currentColor"/><path d="M680.25,570 V686" stroke="currentColor"/><path d="M723.25,570 V630 A44.5,44.5 0 0 0 812.25,630 V570" stroke="currentColor"/><path d="M938.61,604.05 A46.5,46.5 0 1 0 938.61,651.95" stroke="currentColor"/><path d="M979.25,526 V686 M979.25,626 A44.5,44.5 0 0 1 1068.25,626 V686" stroke="currentColor"/><path d="M1111.25,570 V686" stroke="currentColor"/></g></svg>
+    <div class="month"><button id="prev" aria-label="Прошлый месяц">‹</button><span id="mname" class="el"></span><button id="next" aria-label="Следующий месяц">›</button></div>
+  </header>
+
+  <div class="title"><small>куда ушли деньги</small><h1>Расходы</h1></div>
+
+  <section class="card total">
+    <div class="head"><div class="lbl el">Потрачено за месяц</div><div class="lbl el" id="cnt"></div></div>
+    <div class="big num"><mark id="sum">0 ₽</mark></div>
+    <div class="bars" id="bars"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section class="card add">
+    <label class="amount" id="amtbox"><input id="amt" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="0" aria-label="Сумма"><span class="rub">₽</span></label>
+    <div class="hint" id="hint"></div>
+    <div class="cats" id="cats"></div>
+    <input id="note" class="note-in" type="text" maxlength="60" autocomplete="off" placeholder="Комментарий, если нужен" aria-label="Комментарий">
+    <button class="go el" id="add" disabled>Добавить</button>
+    <div class="where" id="where"></div>
+  </section>
+
+  <section class="card list">
+    <div class="lbl el">Записи</div>
+    <div id="rows"></div>
+  </section>
+
+  <button class="csv el" id="csv">Скачать таблицу CSV</button>
+  <div class="foot">Данные хранятся только в этом телефоне.<br>В интернет ничего не уходит.</div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+/* ---------- деньги: только целые копейки, никаких дробных чисел ---------- */
+const MAX_KOP = 99999999999;                      // 999 999 999,99 ₽
+
+// «1 200,50» / «1200.5» / «450» -> копейки (целое) или null. «1.200» (три знака после точки) - отказ, а не 1,20 ₽.
+function parseAmount(s) {
+  if (typeof s !== "string") return null;
+  const t = s.replace(/[\s\u00a0\u202f\u2009]/g, "").replace(",", ".");
+  if (!/^\d{1,9}(\.\d{1,2})?$/.test(t)) return null;
+  const [r, f = ""] = t.split(".");
+  const k = Number(r) * 100 + Number((f + "00").slice(0, 2));
+  return k > 0 && k <= MAX_KOP ? k : null;
+}
+
+// копейки -> «1 200,50 ₽» (копейки показываем, только если они есть)
+function fmtKop(k) {
+  const r = Math.floor(k / 100), c = k % 100;
+  const g = String(r).replace(/\B(?=(\d{3})+(?!\d))/g, "\u00a0");
+  return (c ? g + "," + String(c).padStart(2, "0") : g) + "\u00a0₽";
+}
+const kopPlain = k => Math.floor(k / 100) + "," + String(k % 100).padStart(2, "0");   // для CSV: 1200,50
+
+// доли в процентах, в сумме ровно 100: метод наибольшего остатка, всё в целых числах
+function shares(vals) {
+  const tot = vals.reduce((a, b) => a + b, 0);
+  if (!tot) return vals.map(() => 0);
+  const fl = vals.map(v => (v * 100 - (v * 100) % tot) / tot);
+  const order = vals.map((v, i) => [(v * 100) % tot, v, i]).sort((a, b) => b[0] - a[0] || b[1] - a[1] || a[2] - b[2]);
+  let left = 100 - fl.reduce((a, b) => a + b, 0);
+  for (let j = 0; left > 0; j++, left--) fl[order[j][2]]++;
+  return fl;
+}
+
+/* ---------- даты: храним местное время телефона строкой «ГГГГ-ММ-ДДTЧЧ:ММ», месяц = первые 7 знаков ---------- */
+const pad = n => String(n).padStart(2, "0");
+const stamp = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const monthKey = (y, m) => `${y}-${pad(m + 1)}`;
+const MONTHS = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"];
+const MONTHS_GEN = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+
+/* ---------- данные ---------- */
+const CATS = [
+  ["🛒", "Продукты", "#DCFE00"], ["☕", "Кафе", "var(--ink)"], ["🚕", "Транспорт", "#9C9C98"], ["🏠", "Дом", "#C9C9C4"],
+  ["💊", "Здоровье", "#FF6B5B"], ["🎁", "Подарки", "#F2B880"], ["📱", "Связь", "#6E95F0"], ["✨", "Другое", "#5E5E5A"]];
+const KEY = "nauchi.rashody.v2", OLD_KEY = "nauchi.rashody.v1";
+
+function load() {
+  try {
+    const v2 = localStorage.getItem(KEY);
+    if (v2) return JSON.parse(v2).filter(x => Number.isInteger(x.k) && x.k > 0 && CATS[x.c] && /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(x.d));
+    const v1 = JSON.parse(localStorage.getItem(OLD_KEY) || "[]");      // первая версия хранила рубли дробью и время UTC
+    const moved = v1.filter(x => x.a > 0 && CATS[x.c]).map(x => ({ id: String(x.id), k: Math.round(x.a * 100), c: x.c, n: x.n || "", d: stamp(new Date(x.d)) }));
+    if (moved.length) localStorage.setItem(KEY, JSON.stringify(moved));
+    return moved;
+  } catch (e) { return []; }
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(items)); return true; } catch (e) { toast("Не получилось сохранить"); return false; } }
+
+const $ = id => document.getElementById(id);
+const now0 = new Date();
+let items = load(), cat = null, view = { y: now0.getFullYear(), m: now0.getMonth() };
+const curKey = () => { const n = new Date(); return monthKey(n.getFullYear(), n.getMonth()); };
+const viewKey = () => monthKey(view.y, view.m);
+
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove("show"), 1600); }
+
+/* ---------- ввод ---------- */
+CATS.forEach(([e, name], i) => {
+  const b = document.createElement("button"); b.type = "button"; b.innerHTML = `<span>${e}</span>${name}`;
+  b.onclick = () => { cat = i; [...$("cats").children].forEach((c, j) => c.classList.toggle("on", j === i)); check(); };
+  $("cats").appendChild(b);
+});
+function check() {
+  const raw = $("amt").value, k = parseAmount(raw), bad = raw.trim() !== "" && k === null;
+  $("amtbox").classList.toggle("bad", bad);
+  $("hint").textContent = bad ? (/^[\s0.,]+$/.test(raw) ? "Сумма должна быть больше нуля" : "Не понял сумму. Пример: 1 200,50") : "";
+  $("add").disabled = !(k !== null && cat !== null);
+}
+$("amt").addEventListener("input", check);
+$("amt").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); if (!$("add").disabled) add(); else $("amt").blur(); } });
+
+function add() {
+  const k = parseAmount($("amt").value);
+  if (k === null || cat === null) return;
+  // в текущем месяце - сейчас; в прошлом месяце - его первое число
+  const d = viewKey() === curKey() ? stamp(new Date()) : `${viewKey()}-01T12:00`;
+  items.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), k, c: cat, n: $("note").value.trim(), d });
+  if (!save()) { items.pop(); return; }
+  $("amt").value = ""; $("note").value = ""; cat = null;
+  [...$("cats").children].forEach(c => c.classList.remove("on")); check(); render(); toast("Записано ✓");
+}
+$("add").onclick = add;
+
+function shift(dm) {
+  let m = view.m + dm, y = view.y;
+  if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; }
+  if (monthKey(y, m) > curKey()) return;              // в будущие месяцы не листаем
+  view = { y, m }; render();
+}
+$("prev").onclick = () => shift(-1);
+$("next").onclick = () => shift(1);
+
+/* ---------- экран ---------- */
+function render() {
+  const vk = viewKey(), isCur = vk === curKey();
+  $("mname").textContent = MONTHS[view.m] + " " + view.y;
+  $("next").disabled = isCur;
+  $("where").textContent = isCur ? "" : "Запись попадёт в " + MONTHS[view.m] + " " + view.y;
+
+  const mon = items.filter(x => x.d.slice(0, 7) === vk).sort((p, q) => q.d.localeCompare(p.d) || (q.id > p.id ? 1 : -1));
+  const total = mon.reduce((s, x) => s + x.k, 0);
+  $("sum").textContent = fmtKop(total);
+  $("cnt").textContent = mon.length ? mon.length + " " + plural(mon.length, ["запись", "записи", "записей"]) : "";
+
+  const by = CATS.map((c, i) => [i, mon.filter(x => x.c === i).reduce((s, x) => s + x.k, 0)]).filter(x => x[1] > 0).sort((p, q) => q[1] - p[1]);
+  const pct = shares(by.map(x => x[1]));
+  $("bars").innerHTML = by.map(([i, s]) => `<i style="flex:${s} 0 0;background:${CATS[i][2]}"></i>`).join("");
+  $("legend").innerHTML = by.map(([i], j) => `<div><b style="background:${CATS[i][2]}"></b>${CATS[i][0]} ${CATS[i][1]}<em>${pct[j] || "<1"}%</em></div>`).join("");
+
+  $("rows").innerHTML = mon.length ? "" : '<div class="empty">Пока пусто. Добавь первый расход ↑</div>';
+  mon.forEach(x => {
+    const r = document.createElement("div"); r.className = "row";
+    r.innerHTML = `<div class="e">${CATS[x.c][0]}</div><div class="t"><b></b><i></i></div><div class="s num"></div><button class="x" aria-label="Удалить">✕</button>`;
+    r.querySelector("b").textContent = x.n || CATS[x.c][1];            // комментарий - только как текст
+    r.querySelector("i").textContent = (+x.d.slice(8, 10)) + " " + MONTHS_GEN[+x.d.slice(5, 7) - 1] + ", " + x.d.slice(11, 16) + (x.n ? " · " + CATS[x.c][1] : "");
+    r.querySelector(".s").textContent = "−" + fmtKop(x.k);
+    r.querySelector(".x").onclick = () => {
+      if (!confirm("Удалить запись " + fmtKop(x.k) + "?")) return;
+      const before = items; items = items.filter(y => y.id !== x.id);
+      if (!save()) { items = before; return; } render();
+    };
+    $("rows").appendChild(r);
+  });
+}
+function plural(n, f) { const a = n % 100, b = n % 10; return a > 10 && a < 20 ? f[2] : b === 1 ? f[0] : b >= 2 && b <= 4 ? f[1] : f[2]; }
+
+/* ---------- CSV для Excel / Numbers: «;», копейки через запятую ---------- */
+$("csv").onclick = () => {
+  if (!items.length) { toast("Пока нечего скачивать"); return; }
+  const q = s => { s = String(s); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+  const rows = [["Дата", "Время", "Категория", "Сумма, ₽", "Комментарий"]].concat(
+    [...items].sort((p, r) => p.d.localeCompare(r.d)).map(x =>
+      [`${x.d.slice(8, 10)}.${x.d.slice(5, 7)}.${x.d.slice(0, 4)}`, x.d.slice(11, 16), CATS[x.c][1], kopPlain(x.k), x.n]));
+  const blob = new Blob(["\ufeff" + rows.map(r => r.map(q).join(";")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "rashody.csv"; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+window.Rashody = { parseAmount, fmtKop, shares, kopPlain };        // для автотестов
+render();
+// вернулись в приложение (например, уже наступил новый месяц) - пересчитать экран и кнопки месяцев
+document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+// офлайн: работает, когда страница открыта с сайта (https)
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
