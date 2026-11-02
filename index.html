@@ -101,7 +101,8 @@
 
   .fab { position: fixed; right: max(18px, calc(50vw - 222px)); bottom: calc(env(safe-area-inset-bottom) + 22px); width: 62px; height: 62px; border-radius: 50%;
          border: 0; background: var(--neon); color: var(--on-neon); font: 300 36px/1 "Manrope", sans-serif; z-index: 10;
-         box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+         box-shadow: 0 10px 30px rgba(0,0,0,.18); transition: transform .25s ease, opacity .25s ease; }
+  .fab.away { transform: translateY(120px); opacity: 0; pointer-events: none; }
 
   /* листы снизу */
   .sheet { position: fixed; inset: 0; z-index: 20; display: none; }
@@ -510,6 +511,13 @@ $("eDel").onclick = () => {
   closeSheet("shEntry"); render(); toast("Удалено");
 };
 $("fab").onclick = () => openEntry(null);
+// «+» не закрывает суммы: прячется, пока листаешь вниз, возвращается при прокрутке вверх или остановке
+let lastY = 0, fabT = null;
+addEventListener("scroll", () => {
+  const y = scrollY, fab = $("fab");
+  if (y > lastY + 4 && y > 80) fab.classList.add("away"); else if (y < lastY - 4) fab.classList.remove("away");
+  lastY = y; clearTimeout(fabT); fabT = setTimeout(() => fab.classList.remove("away"), 900);
+}, { passive: true });
 
 /* категории */
 let cT = "e";
